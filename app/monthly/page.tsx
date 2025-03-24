@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,7 @@ import {
 import { format } from "date-fns";
 import { Coins, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import axios from "axios";
 
 interface Expense {
   id: string;
@@ -41,14 +42,26 @@ export default function MonthlyExpenses() {
   const [selectedMonth, setSelectedMonth] = useState<string>(
     `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
   );
-  const [expenses] = useState<Expense[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
 
   const monthlyExpenses = expenses.filter((expense) => {
-    const expenseMonth = `${expense.date.getFullYear()}-${String(expense.date.getMonth() + 1).padStart(2, '0')}`;
+    const expenseMonth = `${ new Date(expense.date).getFullYear()}-${String(new Date(expense.date).getMonth() + 1).padStart(2, '0')}`;
     return expenseMonth === selectedMonth;
   });
 
-  const monthlyTotal = monthlyExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+  const monthlyTotal = monthlyExpenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
+  
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      try {
+        const response = await axios.get("/api/expenses");
+        setExpenses(response.data.data);
+      } catch (error) {
+        console.error("Error fetching expenses:", error);
+      }
+    };
+    fetchExpenses();
+  }, [expenses]);
 
   // Generate last 12 months for the dropdown
   const getLastTwelveMonths = () => {
@@ -126,7 +139,7 @@ export default function MonthlyExpenses() {
                     </TableRow>
                   ) : (
                     monthlyExpenses
-                      .sort((a, b) => b.date.getTime() - a.date.getTime())
+                      // .sort((a, b) => b.date.getTime() - a.date.getTime())
                       .map((expense) => (
                         <TableRow key={expense.id}>
                           <TableCell className="whitespace-nowrap">

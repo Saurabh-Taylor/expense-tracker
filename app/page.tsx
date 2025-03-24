@@ -16,9 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import axios from "axios";
 
 interface Expense {
-  id: string;
   date: Date;
   amount: number;
   remarks: string;
@@ -41,23 +41,36 @@ export default function Home() {
   const currentMonthTotal = expenses
     .filter(
       (expense) =>
-        expense.date.getMonth() === new Date().getMonth() &&
-        expense.date.getFullYear() === new Date().getFullYear()
+        new Date(expense.date).getMonth() === new Date().getMonth() &&
+        new Date(expense.date).getFullYear() === new Date().getFullYear()
     )
-    .reduce((acc, curr) => acc + curr.amount, 0);
+    .reduce((acc, curr) => acc + Number(curr.amount), 0);
+  
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      try {
+        const response = await axios.get("/api/expenses");
+        setExpenses(response.data.data);
+      } catch (error) {
+        console.error("Error fetching expenses:", error);
+      }
+    };
+    fetchExpenses();
+  }, [expenses]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !remarks) return;
 
     const newExpense: Expense = {
-      id: Math.random().toString(36).substr(2, 9),
       date: date,
       amount: parseFloat(amount),
       remarks,
     };
 
-    setExpenses([...expenses, newExpense]);
+    await axios.post("/api/expenses", newExpense);
+
+    // setExpenses([...expenses, newExpense]);
     setAmount("");
     setRemarks("");
   };
@@ -168,9 +181,9 @@ export default function Home() {
                       </TableRow>
                     ) : (
                       expenses
-                        .sort((a, b) => b.date.getTime() - a.date.getTime())
-                        .map((expense) => (
-                          <TableRow key={expense.id}>
+                        // .sort((a, b) => b.date.getTime() - a.date.getTime())
+                        .map((expense, index) => (
+                          <TableRow key={index}>
                             <TableCell className="whitespace-nowrap">
                               {format(expense.date, "MMM dd, yyyy")}
                             </TableCell>
